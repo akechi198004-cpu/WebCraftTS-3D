@@ -36,7 +36,7 @@ body {
 .hud {
   position: absolute;
   left: 24px;
-  bottom: 24px;
+  bottom: 80px;
   display: flex;
   flex-direction: column;
   gap: 10px;

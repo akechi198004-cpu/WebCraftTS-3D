@@ -29,10 +29,15 @@ export function createHud(onClearSave: () => void, onToggleParkour: () => void):
   const autoParkourButton = document.createElement("button");
   autoParkourButton.type = "button";
   autoParkourButton.textContent = "Auto-Parkour"; // 按钮文本：自动跑酷
-  autoParkourButton.style.marginLeft = "10px";
   autoParkourButton.addEventListener("click", onToggleParkour);
 
-  root.append(info, clearSaveButton, autoParkourButton);
+  const buttonContainer = document.createElement("div");
+  buttonContainer.style.display = "flex";
+  buttonContainer.style.gap = "10px";
+  buttonContainer.style.marginTop = "10px";
+  buttonContainer.append(clearSaveButton, autoParkourButton);
+
+  root.append(info, buttonContainer);
 
   return {
     root,
@@ -50,7 +55,6 @@ export function renderHud(view: HudView, state: HudState): void {
   view.info.innerHTML = [
     `<strong>${GAME_TITLE}</strong>`, // 游戏标题
     `FPS: ${state.fps}`,              // 当前帧率
-    `Pointer Lock: ${state.pointerLocked ? "Locked" : "Click canvas to lock"}`, // 鼠标锁定状态
     `Looking at: ${state.selectedBlockText}`, // 准星指向的方块
     `Placing: ${state.placementBlockText}`,   // 当前准备放置的方块类型
     `Blocks: ${state.blockCount}`             // 已生成的方块数量

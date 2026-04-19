@@ -49,15 +49,24 @@ export function syncCameraToPlayer(camera: PerspectiveCamera, player: PlayerStat
     // 第三人称视角
     const distance = 4; // 相机距离玩家的距离
     const heightOffset = 2; // 相机高度偏移
+    const sideOffset = -1.5; // 向左侧偏移，为了实现左后方视角
 
     // 根据偏航角和俯仰角计算相机后方的偏移量
-    const offset = new Vector3(
+    const forwardOffset = new Vector3(
       Math.sin(player.yaw) * Math.cos(player.pitch),
       -Math.sin(player.pitch),
       Math.cos(player.yaw) * Math.cos(player.pitch)
     ).multiplyScalar(distance);
 
-    camera.position.copy(player.position).add(offset);
+    // 计算玩家的右方向向量，然后取反得到左方向
+    const rightVector = new Vector3(
+      Math.cos(player.yaw),
+      0,
+      -Math.sin(player.yaw)
+    ).normalize();
+    const lateralOffset = rightVector.multiplyScalar(sideOffset);
+
+    camera.position.copy(player.position).add(forwardOffset).add(lateralOffset);
     camera.position.y += heightOffset;
 
     // 相机始终看向玩家中心
