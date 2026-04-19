@@ -1,0 +1,20 @@
+{
+  "name": "webcraft-ts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.177.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@types/three": "^0.184.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  }
+}

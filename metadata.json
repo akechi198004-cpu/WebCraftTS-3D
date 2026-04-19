@@ -1,0 +1,6 @@
+{
+  "name": "WebCraft TS - 3D 体素沙盒",
+  "description": "基于 TypeScript + Three.js 构建的高性能 Minecraft-like 体素引擎，包含玛雅金字塔、泰姬陵等世界建筑遗迹。",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
