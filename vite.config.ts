@@ -1,11 +1,16 @@
 import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
+import * as child_process from 'child_process';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  // 获取完整的 commit hash 并截取后 8 位
+  const fullGitHash = child_process.execSync('git rev-parse HEAD').toString().trim();
+  const gitHash = fullGitHash.slice(-8);
   return {
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      '__GIT_HASH__': JSON.stringify(gitHash),
     },
     resolve: {
       alias: {

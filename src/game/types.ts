@@ -1,5 +1,9 @@
 import type { Vector3 } from "three";
 
+declare global {
+  const __GIT_HASH__: string;
+}
+
 // 尺寸类型
 export interface Size {
   width: number;
@@ -67,6 +71,8 @@ export interface PlayerState {
   yaw: number;          // 偏航角
   pitch: number;        // 俯仰角
   isGrounded: boolean;  // 是否在地面上
+  cameraMode: "first-person" | "third-person"; // 相机视角
+  autoParkourEnabled: boolean; // 是否启用自动寻道
 }
 
 // 玩家存档数据
@@ -75,6 +81,7 @@ export interface PlayerSaveData {
   velocity: Vector3Tuple;
   yaw: number;
   pitch: number;
+  cameraMode: "first-person" | "third-person";
 }
 
 // 本地存档状态
@@ -90,4 +97,5 @@ export interface HudState {
   selectedBlockText: string;  // 选中的方块文本
   placementBlockText: string; // 准备放置的方块文本
   blockCount: number;         // 渲染的方块数量
+  gitHash: string;            // Git Commit Hash
 }
