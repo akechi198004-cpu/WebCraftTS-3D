@@ -20,6 +20,8 @@ const WAYPOINTS = [
 let currentWaypointIndex = 0;
 let timeStuck = 0;
 let lastPosition = new Vector3();
+let stuckJumpCount = 0; // 记录连续在同一位置起跳的次数
+let lastJumpPosition = new Vector3(); // 记录上次起跳的位置
 
 /**
  * 自动化测试脚本：驱动玩家按预设路径点寻路，并处理简单的跳跃障碍
@@ -69,6 +71,21 @@ export function runAutoParkour(player: PlayerState, _world: World, deltaTime: nu
     player.velocity.y = PLAYER_JUMP_SPEED;
     player.isGrounded = false;
     timeStuck = 0;
+
+    // 检查是否在同一位置连续跳跃
+    const distFromLastJumpSq = player.position.distanceToSquared(lastJumpPosition);
+    if (distFromLastJumpSq < 1.0) {
+        stuckJumpCount++;
+    } else {
+        stuckJumpCount = 1; // 重置计数
+        lastJumpPosition.copy(player.position);
+    }
+
+    // 如果在同一个位置连续跳跃了 5 次以上，说明彻底卡死（比如在金字塔顶端），强制切换到下一个目标点
+    if (stuckJumpCount >= 5) {
+        currentWaypointIndex = (currentWaypointIndex + 1) % WAYPOINTS.length;
+        stuckJumpCount = 0; // 重置计数
+    }
   }
 
   lastPosition.copy(player.position);
