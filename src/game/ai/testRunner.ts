@@ -5,7 +5,7 @@ import { World } from "../world/World";
 
 // 预设路径点 (绕泰姬陵与比萨斜塔跑一个'8'字环绕轨迹)
 const WAYPOINTS = [
-  new Vector3(0, 0, 32),      // Pyramid (冲上金字塔)
+  new Vector3(0, 18, 32),     // Pyramid (冲上金字塔顶端)
   new Vector3(0, 0, 0),       // Ground center (跑回地面)
   new Vector3(-32, 0, -10),   // Taj Mahal top-right
   new Vector3(-54, 0, -32),   // Taj Mahal left
@@ -27,13 +27,14 @@ let lastPosition = new Vector3();
 export function runAutoParkour(player: PlayerState, _world: World, deltaTime: number): void {
   const target = WAYPOINTS[currentWaypointIndex];
 
-  // 计算到目标点的距离向量 (只考虑 X 和 Z 平面)
+  // 计算到目标点的距离向量
   const dx = target.x - player.position.x;
+  const dy = target.y - player.position.y;
   const dz = target.z - player.position.z;
   const distanceSq = dx * dx + dz * dz;
 
-  // 如果接近目标点，切换到下一个
-  if (distanceSq < 4.0) { // 距离小于 2
+  // 如果水平接近目标点，并且高度也差不多（或者目标是地面），切换到下一个
+  if (distanceSq < 4.0 && Math.abs(dy) < 3.0) { // 距离小于 2，高度差较小
     currentWaypointIndex = (currentWaypointIndex + 1) % WAYPOINTS.length;
     return; // 停顿一帧重新计算
   }
@@ -61,8 +62,9 @@ export function runAutoParkour(player: PlayerState, _world: World, deltaTime: nu
     timeStuck = 0;
   }
 
-  // 如果在地面上并且被卡住了一小段时间（比如碰到了楼梯），尝试跳跃
-  if (player.isGrounded && timeStuck > 0.2) {
+  // 如果在地面上并且被卡住了一小段时间，或者目标点在上方较高处（如金字塔顶），尝试跳跃
+  const needsToJumpHigher = dy > 1.5;
+  if (player.isGrounded && (timeStuck > 0.2 || needsToJumpHigher)) {
     player.velocity.y = PLAYER_JUMP_SPEED;
     player.isGrounded = false;
     timeStuck = 0;
