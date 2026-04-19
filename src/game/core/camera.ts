@@ -1,9 +1,10 @@
-import { PerspectiveCamera } from "three";
+import { PerspectiveCamera, Vector3 } from "three";
 import {
   CAMERA_FAR,
   CAMERA_FOV,
   CAMERA_NEAR,
-  PLAYER_EYE_HEIGHT
+  PLAYER_EYE_HEIGHT,
+  PLAYER_HEIGHT
 } from "../constants";
 import type { PlayerState, Size } from "../types";
 
@@ -33,14 +34,35 @@ export function resizeCamera(camera: PerspectiveCamera, size: Size): void {
 }
 
 /**
- * 将相机的位置和旋转同步到玩家状态（用于第一人称视角）
+ * 将相机的位置和旋转同步到玩家状态（支持第一人称和第三人称视角）
  */
 export function syncCameraToPlayer(camera: PerspectiveCamera, player: PlayerState): void {
-  camera.position.copy(player.position);
-  // 相机高度偏移到玩家眼睛的高度
-  camera.position.y += PLAYER_EYE_HEIGHT;
-  // 同步俯仰角和偏航角
-  camera.rotation.x = player.pitch;
-  camera.rotation.y = player.yaw;
-  camera.rotation.z = 0; // 不允许翻滚
+  if (player.cameraMode === "first-person") {
+    camera.position.copy(player.position);
+    // 相机高度偏移到玩家眼睛的高度
+    camera.position.y += PLAYER_EYE_HEIGHT;
+    // 同步俯仰角和偏航角
+    camera.rotation.x = player.pitch;
+    camera.rotation.y = player.yaw;
+    camera.rotation.z = 0; // 不允许翻滚
+  } else {
+    // 第三人称视角
+    const distance = 4; // 相机距离玩家的距离
+    const heightOffset = 2; // 相机高度偏移
+
+    // 根据偏航角和俯仰角计算相机后方的偏移量
+    const offset = new Vector3(
+      Math.sin(player.yaw) * Math.cos(player.pitch),
+      -Math.sin(player.pitch),
+      Math.cos(player.yaw) * Math.cos(player.pitch)
+    ).multiplyScalar(distance);
+
+    camera.position.copy(player.position).add(offset);
+    camera.position.y += heightOffset;
+
+    // 相机始终看向玩家中心
+    const lookTarget = player.position.clone();
+    lookTarget.y += PLAYER_HEIGHT / 2;
+    camera.lookAt(lookTarget);
+  }
 }

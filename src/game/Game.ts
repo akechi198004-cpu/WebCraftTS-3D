@@ -29,6 +29,9 @@ import { createMinimap, renderMinimap } from "./ui/minimap";
 import type { BlockType, LocalSaveState, PlayerState, WorldRaycastHit } from "./types";
 import { World } from "./world/World";
 import { raycastWorld } from "./world/raycast";
+import { createCharacterModel, updateCharacterAnimation } from "./world/character";
+import type { Group } from "three";
+import { runAutoParkour } from "./ai/testRunner";
 
 /**
  * 游戏主类：负责将各个模块组合并协调游戏生命周期
@@ -40,6 +43,7 @@ export class Game {
   private readonly camera = createCamera();             // 第一人称透视相机
   private readonly player: PlayerState;                 // 玩家状态（位置、速度、视角等）
   private readonly world: World;                        // 世界管理器（方块和地形）
+  private readonly character: Group;                    // 3D玩家模型
   private readonly input: InputController;              // 键盘及鼠标点击输入控制器
   private readonly pointerLock: PointerLockController;  // 鼠标锁定及移动视角控制器
   private readonly hud: HudView;                        // 顶部信息显示 UI
@@ -68,7 +72,7 @@ export class Game {
       this.renderer.domElement,
       () => this.pointerLock.isLocked() // 只有在指针锁定时才处理左/右键点击逻辑
     );
-    this.hud = createHud(this.handleClearSave);
+    this.hud = createHud(this.handleClearSave, this.handleToggleParkour);
 
     // 初始化游戏循环，绑定更新和渲染逻辑
     this.loop = new Loop((deltaTime) => this.update(deltaTime), () => {
@@ -78,6 +82,10 @@ export class Game {
     // 将各个 UI 和画布组装到 DOM 中
     this.mountPoint.append(this.shell);
     this.shell.append(this.renderer.domElement, this.crosshair, this.hud.root, this.legend, this.minimap.root);
+
+    // 初始化角色模型
+    this.character = createCharacterModel();
+    this.scene.add(this.character);
 
     this.attachWorld(this.world.root);
     this.syncCamera();
@@ -139,11 +147,30 @@ export class Game {
    */
   private update(deltaTime: number): void {
     this.pointerLock.update(this.player);        // 根据鼠标移动更新视角
-    this.applyMovementInput();                   // 处理 WASD 移动和跳跃输入
+
+    // 处理视角切换输入
+    if (this.input.consumeTabAction()) {
+      this.player.cameraMode = this.player.cameraMode === "first-person" ? "third-person" : "first-person";
+    }
+
+    // 处理移动逻辑（自动或手动）
+    if (this.player.autoParkourEnabled) {
+      runAutoParkour(this.player, this.world, deltaTime);
+    } else {
+      this.applyMovementInput();                 // 处理 WASD 移动和跳跃输入
+    }
+
     this.handleBlockSelectionInput();            // 处理数字键 1-9 切换方块类型
     applyGravity(this.player, deltaTime);        // 施加重力
     movePlayerWithCollisions(this.player, this.world, deltaTime); // 执行物理碰撞检测并更新玩家位置
     this.syncCamera();                           // 将相机位置同步到玩家眼部
+
+    // 更新角色模型
+    this.character.position.copy(this.player.position);
+    this.character.rotation.y = this.player.yaw;
+    this.character.visible = this.player.cameraMode === "third-person";
+    updateCharacterAnimation(this.character, this.player.velocity);
+
     this.handleBlockInteractions();              // 射线检测以及处理挖掘/放置方块
     this.world.update(deltaTime, this.player);   // 根据玩家位置加载/卸载区块
     this.updateHud(deltaTime);                   // 更新 UI 数据
@@ -240,12 +267,16 @@ export class Game {
         ? "none"
         : `${this.selectedBlock.blockType} @ (${this.selectedBlock.blockPosition.x}, ${this.selectedBlock.blockPosition.y}, ${this.selectedBlock.blockPosition.z})`;
 
+    // @ts-ignore: __GIT_HASH__ is injected by Vite at build time
+    const gitHash = typeof __GIT_HASH__ !== "undefined" ? __GIT_HASH__ : "dev";
+
     renderHud(this.hud, {
       fps,
       pointerLocked: this.pointerLock.isLocked(),
       selectedBlockText,
       placementBlockText: this.currentPlacementBlock,
-      blockCount: this.world.getBlockCount()
+      blockCount: this.world.getBlockCount(),
+      gitHash
     });
     
     updateLegendActive(this.legend, this.currentPlacementBlock);
@@ -274,7 +305,8 @@ export class Game {
         position: toVector3Tuple(this.player.position),
         velocity: toVector3Tuple(this.player.velocity),
         yaw: this.player.yaw,
-        pitch: this.player.pitch
+        pitch: this.player.pitch,
+        cameraMode: this.player.cameraMode
       },
       blocks: this.world.serialize()
     };
@@ -306,6 +338,17 @@ export class Game {
   };
 
   /**
+   * 自动跑酷按钮点击事件处理器：切换自动寻路状态
+   */
+  private readonly handleToggleParkour = (): void => {
+    this.player.autoParkourEnabled = !this.player.autoParkourEnabled;
+    // 如果启用了自动跑酷，可以选择解除鼠标锁定，防止鼠标移动干扰
+    if (this.player.autoParkourEnabled) {
+      this.pointerLock.unlock();
+    }
+  };
+
+  /**
    * 清除存档按钮点击事件处理器：清空本地存储，并重置世界及玩家状态
    */
   private readonly handleClearSave = (): void => {
@@ -330,7 +373,9 @@ function createPlayerState(saveState: LocalSaveState | null): PlayerState {
       velocity: new Vector3(...saveState.player.velocity),
       yaw: saveState.player.yaw,
       pitch: saveState.player.pitch,
-      isGrounded: false
+      isGrounded: false,
+      cameraMode: saveState.player.cameraMode ?? "first-person",
+      autoParkourEnabled: false
     };
   }
 
@@ -339,7 +384,9 @@ function createPlayerState(saveState: LocalSaveState | null): PlayerState {
     velocity: new Vector3(),
     yaw: PLAYER_START_YAW,
     pitch: PLAYER_START_PITCH,
-    isGrounded: false
+    isGrounded: false,
+    cameraMode: "first-person",
+    autoParkourEnabled: false
   };
 }
 

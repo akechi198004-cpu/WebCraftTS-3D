@@ -97,7 +97,17 @@ export class InputController {
     this.mouseTarget.removeEventListener("contextmenu", this.handleContextMenu);
   }
 
+  /**
+   * 消费 Tab 键点击事件
+   */
+  public consumeTabAction(): boolean {
+    return this.consumeKey("Tab");
+  }
+
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
+    if (event.code === "Tab") {
+      event.preventDefault(); // 阻止 Tab 键切换焦点
+    }
     this.pressedKeys.add(event.code);
   };
 
