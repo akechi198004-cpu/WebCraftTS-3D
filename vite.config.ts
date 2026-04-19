@@ -19,6 +19,7 @@ export default defineConfig(({mode}) => {
     },
     server: {
       host: '0.0.0.0',
+      allowedHosts: true, // 核心：允许任何域名通过隧道访问
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
