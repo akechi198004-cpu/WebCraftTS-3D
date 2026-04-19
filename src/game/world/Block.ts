@@ -1,14 +1,18 @@
 import type { BlockData, BlockType } from "../types";
 
+/**
+ * 方块数据注册表
+ * 定义了所有方块类型的物理属性（如是否为固体）和基础颜色
+ */
 export const BLOCK_REGISTRY: Record<BlockType, BlockData> = {
   air: {
     type: "air",
-    solid: false,
+    solid: false,   // 空气不是固体，可以穿透
     color: 0x000000
   },
   grass: {
     type: "grass",
-    solid: true,
+    solid: true,    // 草方块是固体
     color: 0x59a14f
   },
   stone: {
@@ -43,7 +47,7 @@ export const BLOCK_REGISTRY: Record<BlockType, BlockData> = {
   },
   water: {
     type: "water",
-    solid: false,
+    solid: false,   // 水不是固体（可以掉进去或游过去）
     color: 0x34a1eb
   },
   ice: {
@@ -53,6 +57,9 @@ export const BLOCK_REGISTRY: Record<BlockType, BlockData> = {
   }
 };
 
+/**
+ * 根据方块类型获取对应的方块数据
+ */
 export function getBlockData(type: BlockType): BlockData {
   return BLOCK_REGISTRY[type];
 }
