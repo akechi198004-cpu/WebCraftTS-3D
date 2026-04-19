@@ -108,19 +108,30 @@ export class Game {
     if (this.persistTimeout) {
       window.clearTimeout(this.persistTimeout);
     }
+    if (this.resizeTimeout) {
+      window.clearTimeout(this.resizeTimeout);
+    }
     // 退出时保存最后的状态
     saveLocalState(this.captureSaveState());
   }
 
+  private resizeTimeout = 0;
+
   /**
-   * 处理窗口大小改变事件，更新渲染器和相机属性
+   * 处理窗口大小改变事件，包含防抖机制以减轻连续调整窗口大小带来的性能消耗
    */
   private readonly handleResize = (): void => {
-    const width = this.mountPoint.clientWidth;
-    const height = this.mountPoint.clientHeight;
+    if (this.resizeTimeout) {
+      window.clearTimeout(this.resizeTimeout);
+    }
 
-    resizeRenderer(this.renderer, { width, height });
-    resizeCamera(this.camera, { width, height });
+    this.resizeTimeout = window.setTimeout(() => {
+      const width = this.mountPoint.clientWidth;
+      const height = this.mountPoint.clientHeight;
+
+      resizeRenderer(this.renderer, { width, height });
+      resizeCamera(this.camera, { width, height });
+    }, 100); // 延迟 100ms 执行防抖
   };
 
   /**

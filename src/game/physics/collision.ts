@@ -23,10 +23,28 @@ export function movePlayerWithCollisions(
   // 每一帧开始时重置着地状态
   player.isGrounded = false;
 
-  // 分离坐标轴进行移动和碰撞处理，这样即使一面墙挡住了玩家，玩家依然可以沿着墙面滑动
-  moveAlongAxis(player, world, "x", player.velocity.x * deltaTime);
-  moveAlongAxis(player, world, "y", player.velocity.y * deltaTime);
-  moveAlongAxis(player, world, "z", player.velocity.z * deltaTime);
+  // 计算目标移动量
+  const dx = player.velocity.x * deltaTime;
+  const dy = player.velocity.y * deltaTime;
+  const dz = player.velocity.z * deltaTime;
+
+  // 为了防止速度过快导致“穿模（Tunneling）”，将移动量按最大步长切分为多次小步移动
+  // 方块厚度为 1，加上玩家半径 0.35，最大步长应小于此值以保证安全。
+  const MAX_STEP = 0.25;
+  const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  const steps = Math.max(1, Math.ceil(distance / MAX_STEP));
+
+  const stepX = dx / steps;
+  const stepY = dy / steps;
+  const stepZ = dz / steps;
+
+  // 循环执行小步长移动
+  for (let i = 0; i < steps; i++) {
+    // 只有在速度不为 0 时才尝试移动，因为碰撞可能会将某轴的速度置 0
+    if (player.velocity.x !== 0) moveAlongAxis(player, world, "x", stepX);
+    if (player.velocity.y !== 0) moveAlongAxis(player, world, "y", stepY);
+    if (player.velocity.z !== 0) moveAlongAxis(player, world, "z", stepZ);
+  }
 
   // 如果没有因为 y 轴碰撞检测到着地，再做一次专门的着地检测（处理站立不动的情况）
   if (!player.isGrounded && isStandingOnGround(player, world)) {
