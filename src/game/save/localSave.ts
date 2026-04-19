@@ -49,5 +49,9 @@ export function saveLocalState(state: LocalSaveState): void {
  * 清除本地的存档数据
  */
 export function clearLocalSave(): void {
-  window.localStorage.removeItem(SAVE_KEY);
+  try {
+    window.localStorage.removeItem(SAVE_KEY);
+  } catch (err) {
+    console.error("Failed to clear local save:", err);
+  }
 }

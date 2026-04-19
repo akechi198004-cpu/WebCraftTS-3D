@@ -179,10 +179,10 @@ function buildMayanPyramid(blocks: WorldBlock[], centerWorldX: number, centerWor
 }
 
 /**
- * 种植树木。由于树木占用空间较小且生成较密集，假设它完全位于生成树干的区块内。
- * （严格来说，区块边缘的树叶可能会越界，但为了简化逻辑，我们将整棵树归入中心所在区块）
+ * 种植树木。
+ * 增加了边界检测，防止树叶跨越区块导致渲染异常和存档不同步。
  */
-function buildTree(blocks: WorldBlock[], tx: number, tz: number, baseY: number) {
+function buildTree(blocks: WorldBlock[], tx: number, tz: number, cx: number, cz: number, baseY: number) {
   const trunkHeight = 4;
   // 树干
   for (let y = 1; y <= trunkHeight; y++) {
@@ -194,7 +194,11 @@ function buildTree(blocks: WorldBlock[], tx: number, tz: number, baseY: number) 
       for (let z = -2; z <= 2; z++) {
         if (Math.abs(x) === 2 && Math.abs(z) === 2) continue; // 切掉角
         if (x === 0 && z === 0) continue; // 中心留给树干
-        blocks.push({ position: { x: tx + x, y: baseY + y, z: tz + z }, type: "leaves" });
+        const wx = tx + x;
+        const wz = tz + z;
+        if (isBlockInChunk(wx, wz, cx, cz)) {
+          blocks.push({ position: { x: wx, y: baseY + y, z: wz }, type: "leaves" });
+        }
       }
     }
   }
@@ -202,7 +206,11 @@ function buildTree(blocks: WorldBlock[], tx: number, tz: number, baseY: number) 
   for (let x = -1; x <= 1; x++) {
     for (let z = -1; z <= 1; z++) {
       if (Math.abs(x) === 1 && Math.abs(z) === 1) continue;
-      blocks.push({ position: { x: tx + x, y: baseY + trunkHeight + 1, z: tz + z }, type: "leaves" });
+      const wx = tx + x;
+      const wz = tz + z;
+      if (isBlockInChunk(wx, wz, cx, cz)) {
+        blocks.push({ position: { x: wx, y: baseY + trunkHeight + 1, z: wz }, type: "leaves" });
+      }
     }
   }
 }
@@ -238,7 +246,7 @@ export function generateChunkData(cx: number, cz: number): WorldBlock[] {
       const rand = n - Math.floor(n);
       // 生成树木（概率由阈值控制）
       if (rand > 0.997) {
-        buildTree(blocks, worldX, worldZ, WORLD_FLOOR_Y);
+        buildTree(blocks, worldX, worldZ, cx, cz, WORLD_FLOOR_Y);
       }
     }
   }

@@ -142,7 +142,8 @@ export function getBlockMaterial(type: Exclude<BlockType, "air">, colorHex: numb
     });
     dataUrlCache.set(type, tex.image.toDataURL());
     const opacity = type === "water" ? 0.7 : 0.85;
-    mat = createMat(tex, { transparent: true, opacity, depthWrite: false }); // depthWrite: false 有助于简单的透明渲染层级问题
+    // 使用 alphaHash 实现透明方块之间的准确排序穿透效果（取代传统的基于排序的半透明和不写深度的 hack）
+    mat = createMat(tex, { transparent: false, alphaHash: true, opacity, depthWrite: true });
   } else {
     // 后备选项：纯色无纹理
     const tex = makeTex(ctx => {
